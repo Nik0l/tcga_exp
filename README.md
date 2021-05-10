@@ -9,8 +9,13 @@ TCGA RNAseq and H&amp;E WSIs
 
 3. Training a ML model for classification.
 
+First, copy TCGA RNA, mutation, and clinical data into `data` folder:
 
-Run `exp.py`:
+    a. 'lung_cancer_mut_only.csv'
+    b. 'lung_cancer_rna_only.csv'
+    c. 'clinical_data.tsv'
+
+Then run `exp.py` for analysis:
 
 ```python
 # preprocess the data
