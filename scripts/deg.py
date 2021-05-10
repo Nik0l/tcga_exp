@@ -7,8 +7,6 @@ import pandas as pd
 import scipy.stats
 import diffxpy.api as de
 
-from batchglm.api.models.tf1.glm_nb import Simulator
-
 
 def run_deg(column_name='STK11',
             path='~/PycharmProjects/project/tcga_exp/',
@@ -17,31 +15,18 @@ def run_deg(column_name='STK11',
             output_results_file='deg.csv',
             save_results=True):
 
-    sim = Simulator(num_observations=200, num_features=100)
-    sim.generate_sample_description(num_batches=0, num_conditions=2)
-    sim.generate_params(
-        rand_fn_loc=lambda shape: np.random.uniform(-0.1, 0.1, shape),
-        rand_fn_scale=lambda shape: np.random.uniform(0.1, 2, shape)
-    )
-    sim.generate_data()
-    print(sim.x)
-    print(sim.sample_description)
-
     df_rna = pd.read_csv(path + training_data_filename)
     df_rna = df_rna.drop(['SAMPLE_BARCODE'], axis=1)
     df_gt = pd.read_csv(path + training_gt_data_filename)
 
     X = df_rna
     Y = df_gt[column_name]
-    #print(X)
-    #print(Y)
+
     x = X.to_numpy()
     var_y = X.columns
     Y.columns = ['condition']
     print(x.shape)
     print(var_y)
-
-    var = pd.DataFrame(index=["gene" + str(i) for i in range(sim.x.shape[1])])
 
     print('LUAD data')
     Y = Y.to_frame()
