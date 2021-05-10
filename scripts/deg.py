@@ -81,16 +81,6 @@ def get_10top(path_to_deg):
     df_res = df_res[['gene', 'pval', 'qval', 'log2fc', 'mean', 'zero_mean', 'grad', 'coef_mle', 'coef_sd', 'll']]
     df_res = df_res.sort_values(by='qval', ascending=True)
     print(df_res.columns)
-    get_top_10_genes = list(df_res.gene[-10:])
+    top_10_genes = list(df_res.gene[-10:])
     print(df_res.head(10))
-
-
-path_to_deg = 'deg.csv'
-
-run_deg(column_name='STK11',
-        path='~/PycharmProjects/project/tcga_exp/data/',
-        training_data_filename ='df_training.csv',
-        training_gt_data_filename='df_gt_training.csv',
-        output_results_file=path_to_deg)
-
-get_10top(path_to_deg)
+    return top_10_genes

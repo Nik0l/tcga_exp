@@ -8,8 +8,6 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.model_selection import train_test_split
 import seaborn as sns
 
-from scripts.preprocessing import prepare_data_for_ml
-
 
 def plot_roc(fpr, tpr, roc_auc):
     plt.plot(fpr, tpr)
@@ -149,22 +147,3 @@ def run_ml(path, training_data_filename, training_gt_data_filename, column_name,
 
     if save_model:
         joblib.dump(bst, 'bst_model.pkl', compress=True)
-
-
-path = '~/PycharmProjects/project/tcga_exp/data/' # change to your data path with training data
-
-training_data_filename = 'df_training.csv'
-training_gt_data_filename = 'df_gt_training.csv'
-cancer_types = ['LUAD']
-column_name = 'STK11'
-
-prepare_data_for_ml(path=path,
-                    name_df_mut='lung_cancer_mut_only.csv',
-                    name_df_rna='lung_cancer_rna_only.csv',
-                    name_df_clinical='clinical_data.tsv',
-                    training_gt_data_filename=training_gt_data_filename,
-                    training_data_filename=training_data_filename,
-                    column_name=column_name,
-                    cancer_types=cancer_types)
-
-run_ml(path, training_data_filename, training_gt_data_filename, column_name)
