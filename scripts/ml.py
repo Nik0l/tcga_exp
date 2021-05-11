@@ -10,6 +10,8 @@ import seaborn as sns
 
 
 def plot_roc(fpr, tpr, roc_auc):
+    """ Plot ROC curve. """
+    #fig = plt.figure()
     plt.plot(fpr, tpr)
     plt.plot([0, 1], [0, 1], 'k--')
     plt.xlim([0.0, 1.0])
@@ -22,41 +24,33 @@ def plot_roc(fpr, tpr, roc_auc):
 
 
 def randomised_gt(Y):
+    """ Get a random Y as a sanity check. """
     Y = pd.DataFrame(np.random.randint(0, 2, Y.shape[0]), columns=['STK11'])
     return Y
 
 
-def get_train_test_data(df_rna, df_gt, column_name, randomise_gt=False):
+def get_train_test_data(X, df_gt, column_name, test_size, randomise_gt=False):
+    """ Split the data into training and test"""
 
-    print(df_rna.shape, df_gt.shape)
-    print(df_rna)
-    X = df_rna
     Y = df_gt[column_name]
-    print(X, Y)
-
     if randomise_gt:
         Y = randomised_gt(Y)
 
     X_train, X_test, y_train, y_test = train_test_split(X, Y,
-                                                        test_size=0.2,
+                                                        test_size=test_size,
                                                         random_state=42,
                                                         stratify=Y)
 
     print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
-    print('total train:', y_train.sum())
-    print('total test', y_test.sum())
+    print('total train samples:', y_train.sum())
+    print('total test samples', y_test.sum())
     dtrain = xgb.DMatrix(X_train, label=y_train)
     dtest = xgb.DMatrix(X_test, label=y_test)
     return dtrain, dtest, y_test, y_test
 
 
-def plot_boxplot(X, Y, column='STK11'):
-    df_box = pd.concat([X, Y], axis=1)
-    boxplot = df_box.boxplot(by=column)
-    plt.show()
-
-
 def get_params():
+    """ All of xgboost parameters for training. """
     params = {
         'learning_rate': 0.01,
         'n_estimators': 1000,
@@ -76,6 +70,7 @@ def get_params():
 
 
 def plot_corr(df_rna, df_gt, column_name):
+    """ Plot correlation matrices. """
     rs = np.random.RandomState(0)
     df = pd.concat([df_rna, df_gt[column_name]], axis=1)
     corr = df.corr()
@@ -88,6 +83,7 @@ def plot_corr(df_rna, df_gt, column_name):
 
 
 def run_cv(dtrain):
+    """ Run cross validaiton. Important: make sure that your model does not overfit."""
     xgb_cv = cv(dtrain=dtrain,
                 params=get_params(),
                 nfold=10,
@@ -98,30 +94,21 @@ def run_cv(dtrain):
     print('Cross validation results: \n', xgb_cv)
 
 
-def get_genes_from_deg():
-    # these are from DEG analysis
-    top10 = ['SLC22A6', 'C6orf176', 'COL25A1', 'SLC14A2', 'GLTPD2', 'AGXT2L1', 'CALCA', 'FXYD4', 'C1orf64', 'INHA']
-    bottom10 = ['DPCR1', 'MYCN', 'AKR1B15', 'SCIN', 'ECEL1', 'SLC7A2', 'FREM1', 'IL6', 'PPP4R4', 'CHST2']
-    return top10, bottom10
-
-
-def run_ml(path, training_data_filename, training_gt_data_filename, column_name, save_model=False):
-
+def run_ml(path, training_data_filename, training_gt_data_filename, column_name, genes_subset=None, test_size=0.2, save_model=False):
+    """ Main function to train an xgboost classifier, save it, evaluate, plot importance of its features."""
     df_rna = pd.read_csv(path + training_data_filename)
     df_rna = df_rna.drop(['SAMPLE_BARCODE'], axis=1)
 
-    what_genes = 'top10'
-    top10, bottom10 = get_genes_from_deg()
-    if what_genes == 'top10':
-        df_rna = df_rna[top10]
-    elif what_genes == 'bottom10':
-        df_rna = df_rna[bottom10]
+    if genes_subset is not None:
+        df_rna = df_rna[genes_subset]
     else:
-        print('all genes are used')
+        print('all genes are used!')
 
     df_gt = pd.read_csv(path + training_gt_data_filename)
 
-    dtrain, dtest, y_test, y_test = get_train_test_data(df_rna, df_gt, column_name, randomise_gt=False)
+    dtrain, dtest, y_test, y_test = get_train_test_data(df_rna, df_gt, column_name,
+                                                        test_size=test_size,
+                                                        randomise_gt=False)
     bst = xgb.train(params=get_params(), dtrain=dtrain, num_boost_round=100)
 
     if save_model:

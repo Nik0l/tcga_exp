@@ -1,20 +1,21 @@
 import anndata
-import matplotlib.pyplot as plt
-import seaborn as sns
-import logging
-import numpy as np
 import pandas as pd
-import scipy.stats
 import diffxpy.api as de
 
 
 def run_deg(column_name='STK11',
             path='~/PycharmProjects/project/tcga_exp/',
-            training_data_filename ='df_training.csv',
+            training_data_filename='df_training.csv',
             training_gt_data_filename='df_gt_training.csv',
             output_results_file='deg.csv',
             save_results=True):
-
+    """ Runs DEG analysis and saves the results in a csv file
+    :param column_name: the condition;
+    :param path: the path to your input data and where the data will be saved;
+    :param training_data_filename: ML training matrix;
+    :param training_gt_data_filename: ML training ground truth file;
+    :param output_results_file: the file where the results will be saved;
+    :param save_results: True if you want to save the results. """
     df_rna = pd.read_csv(path + training_data_filename)
     df_rna = df_rna.drop(['SAMPLE_BARCODE'], axis=1)
     df_gt = pd.read_csv(path + training_gt_data_filename)
@@ -62,10 +63,22 @@ def run_deg(column_name='STK11',
 
 
 def get_10top(path_to_deg):
+    """ Get only ten top genes from DEG. """
     df_res = pd.read_csv(path_to_deg)
     df_res = df_res[['gene', 'pval', 'qval', 'log2fc', 'mean', 'zero_mean', 'grad', 'coef_mle', 'coef_sd', 'll']]
     df_res = df_res.sort_values(by='qval', ascending=True)
     print(df_res.columns)
     top_10_genes = list(df_res.gene[-10:])
     print(df_res.head(10))
-    return top_10_genes
+    return list(top_10_genes)
+
+
+def get_10bottom(path_to_deg):
+    """ Get only ten bottom genes from DEG. """
+    df_res = pd.read_csv(path_to_deg)
+    df_res = df_res[['gene', 'pval', 'qval', 'log2fc', 'mean', 'zero_mean', 'grad', 'coef_mle', 'coef_sd', 'll']]
+    df_res = df_res.sort_values(by='qval', ascending=False)
+    print(df_res.columns)
+    bottom_10_genes = list(df_res.gene[-10:])
+    print(df_res.head(10))
+    return list(bottom_10_genes)
