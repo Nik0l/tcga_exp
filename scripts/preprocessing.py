@@ -2,7 +2,7 @@ import pandas as pd
 
 
 def get_clinical_data(path_clinical, cancer_types):
-
+    """ Some preprocessing for TCGA clinical data."""
     df_clinical = pd.read_csv(path_clinical, sep='\t')
     df_clinical = df_clinical[df_clinical['acronym'].isin(cancer_types)]
     df_clinical = df_clinical.rename(columns={'acronym': 'cancer_type'})
