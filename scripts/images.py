@@ -1,4 +1,5 @@
 import umap
+import glob
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -60,8 +61,39 @@ def plot_umap_samples(samples):
     plt.show()
 
 
-path = '/../tcga_exp/data/image_embeddings/'
-get_luad_data_info(path)
-patches = get_patches_for_image(path, image_name='5eeb2ac5e4b0b6e434491680.svs')
-plot_umap_samples(patches)
+def process_second_embedding_data(path='/Users/kmwx127/PycharmProjects/project/tcga_exp/data/image_embeddings/'):
+
+    get_luad_data_info(path)
+    patches = get_patches_for_image(path, slide_name='5eeb2ac5e4b0b6e434491680.svs')
+    plot_umap_samples(patches)
+
+
+def get_embeddings_image(path, image_name):
+
+    image_embeddings = np.loadtxt(path + image_name + '.csv', delimiter=',', skiprows=1)
+    print(image_embeddings.shape)
+    return image_embeddings
+
+
+def get_all_images(path_dsmil_embeddings):
+
+    all_files = glob.glob(path_dsmil_embeddings + '*.csv')
+    all_images_names = [f.split('/')[-1].split('.')[0] for f in all_files]
+    return all_images_names
+
+
+def process_first_embedding_data(path):
+    all_images_names = get_all_images(path_dsmil_embeddings=path)
+    print(all_images_names)
+    image_embeddings = get_embeddings_image(path, all_images_names[0])
+    print(image_embeddings)
+    plot_umap_samples(image_embeddings)
+
+
+path_one = '/Users/kmwxxxx/Downloads/public_method/tcga-dataset/tcga_lung_data_feats/'
+process_first_embedding_data(path=path_one)
+
+path_two = '/Users/kmwxxxx/PycharmProjects/project/tcga_exp/data/image_embeddings/'
+process_second_embedding_data(path=path_two)
+
 
