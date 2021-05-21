@@ -24,7 +24,7 @@ def prepareTrainingData(df_rna, df_mut, genes):
     # Add mutation status as last column
     gene_list = genes
     mutation = df_mut['mutation_status'].tolist()
-    df_training = df_rna[gene_list]
+    df_training = df_rna[df_rna.columns.intersection(gene_list)]
     df_training = df_training.assign(mutation = mutation)
     return(df_training)
 
@@ -87,7 +87,7 @@ df_rna_zscore_zeroone = normalize_data(df_rna_zscore, columns=columns, index=ind
 df_rna_zscore_zeroone.to_csv('data/sophie_ML/df_rna_TMM_zscore_zeroone', sep='\t', compression='gzip')
 
 # Kaufman scoring #####################################################################################################
-# get list of genes of interest
+# get list of genes of interest #######################################################################################
 kaufman_genes = ['DUSP4', 'PDE4D', 'IRS2', 'BAG1', 'HAL', 'TACC2', 'AVPI1', 'CPS1', 'PTP4A1', 'RFK',
                  'SIK1', 'FGA','GLCE', 'TESC', 'MUC5AC', 'TFF1']
 
@@ -100,31 +100,51 @@ FDR_logFC_genes = exact_test.loc[(exact_test['logFC'] < -1) | (exact_test['logFC
 FDR_logFC_genes = FDR_logFC_genes.sort_values(by='FDR')
 FDR_logFC_genes = FDR_logFC_genes.iloc[:16, 1].tolist()
 
+# get list of top 100 FDR genes and logFC > 1 or < -1
+FDR_genes_100 = exact_test.loc[(exact_test['logFC'] < -1) | (exact_test['logFC'] > 1)]
+FDR_genes_100 = FDR_genes_100.sort_values(by='FDR')
+FDR_genes_100 = FDR_genes_100.iloc[:100,1].tolist()
+
+# get list of top 1000 FDR genes and logFC > 1 or < -1
+FDR_genes_1000 = exact_test.loc[(exact_test['logFC'] < -1) | (exact_test['logFC'] > 1)]
+FDR_genes_1000 = FDR_genes_1000.sort_values(by='FDR')
+FDR_genes_1000 = FDR_genes_1000.iloc[:1000,1].tolist()
+
+# get list of top 5 FDR genes (no logFC filter)
+FDR_genes_5 = exact_test.loc[(exact_test['logFC'] < -1) | (exact_test['logFC'] > 1)]
+FDR_genes_5 = FDR_genes_5.sort_values(by='FDR')
+FDR_genes_5 = FDR_genes_5.iloc[:5,1].tolist()
+
+# Nikolay's list - top10
+top10_nik = ['SLC22A6', 'C6orf176', 'COL25A1', 'SLC14A2', 'GLTPD2', 'AGXT2L1', 'CALCA', 'FXYD4', 'C1orf64', 'INHA']
+
 # get random gene list
 n = random.sample(range(0, len(exact_test.index)), 16) # generate 16 random indexes
 random_genes = exact_test.iloc[n, 1]
 
 # # get list of top 16 logFC (with FDR <= 0.01)
-# logFC_genes = exact_test[exact_test['FDR'] <= 0.01] # keep significant genes only
-# abs_logFC = abs(logFC_genes['logFC']).tolist() # compute absolute values of logFC (to select both up- and down-regulated genes)
-# logFC_genes = logFC_genes.assign(logFC = abs_logFC)
-# logFC_genes = logFC_genes.sort_values(by='logFC', ascending=False)
-# logFC_genes = logFC_genes.iloc[:16, 1].tolist()
+logFC_genes = exact_test[exact_test['FDR'] <= 0.01] # keep significant genes only
+abs_logFC = abs(logFC_genes['logFC']).tolist() # compute absolute values of logFC (to select both up- and down-regulated genes)
+logFC_genes = logFC_genes.assign(logFC = abs_logFC)
+logFC_genes = logFC_genes.sort_values(by='logFC', ascending=False)
+logFC_genes = logFC_genes.iloc[:16, 1].tolist()
 
+
+# Scoring ############################################################################################################
 # Prepare data for scoring (select relevant genes and get mutation status)
 df_training = prepareTrainingData(df_rna_zscore_zeroone, df_mut, FDR_genes)
 
 # Score samples and plot data
 df_score = kaufmanScore(df_training)
 fig,ax = plotScores(df_score)
-fig.savefig('results/kaufman_score_random_genes.png')
+fig.savefig('results/kaufman_score_top16_FDR_genes.png')
 
 # ROC curves to evaluate scoring performance
 mutation = df_score['mutation'].tolist()
 score = df_score['score'].tolist()
 fpr, tpr, thresh = roc_curve(mutation, score, pos_label=1)
 fig, ax = plotROC(fpr, tpr)
-fig.savefig('results/kaufman_ROC_random_genes.png')
+fig.savefig('results/kaufman_ROC_top16_genes.png')
 auc_score = roc_auc_score(mutation, score)
 
 # randomized control - shuffle labels
