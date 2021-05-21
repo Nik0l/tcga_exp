@@ -22,7 +22,7 @@ def normalize_data(df, columns, index):
 def prepareTrainingData(df_rna, df_mut, genes):
     # Filter df_rna using gene_list
     # Add mutation status as last column
-    gene_list = genes['Symbol'].tolist()
+    gene_list = genes
     mutation = df_mut['mutation_status'].tolist()
     df_training = df_rna[gene_list]
     df_training = df_training.assign(mutation = mutation)
@@ -68,8 +68,8 @@ df_rna = pd.read_csv(path + 'TMM_counts.csv')
 df_mut = pd.read_csv(path + 'sample_info_filtered.csv')
 # genes: list of gene symbols (protein coding genes only, corresponding to df_rna (order preserved)
 genes = pd.read_csv(path + 'genes.csv')
-# kaufman_genes: list of genes in 16-gene signature by Kaufman et al., 2014
-kaufman_genes = pd.read_csv(path + 'ET_kaufman_genes.csv')
+# exact_test: table with exact test results (edgeR) for all protein-coding genes
+exact_test = pd.read_csv(path + 'ExactTest_pc_genes.csv')
 
 # Pre-process data ####################################################################################################
 # Transpose df_rna (to have genes as columns, samples as rows)
@@ -87,6 +87,10 @@ df_rna_zscore_zeroone = normalize_data(df_rna_zscore, columns=columns, index=ind
 df_rna_zscore_zeroone.to_csv('data/sophie_ML/df_rna_TMM_zscore_zeroone', sep='\t', compression='gzip')
 
 # Kaufman scoring #####################################################################################################
+# get list of genes of interest
+kaufman_genes = ['DUSP4', 'PDE4D', 'IRS2', 'BAG1', 'HAL', 'TACC2', 'AVPI1', 'CPS1', 'PTP4A1', 'RFK',
+                 'SIK1', 'FGA','GLCE', 'TESC', 'MUC5AC', 'TFF1']
+
 # Prepare data for scoring (select relevant genes and get mutation status)
 df_training = prepareTrainingData(df_rna_zscore_zeroone, df_mut, kaufman_genes)
 
