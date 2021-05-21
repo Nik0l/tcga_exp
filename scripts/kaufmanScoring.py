@@ -91,20 +91,40 @@ df_rna_zscore_zeroone.to_csv('data/sophie_ML/df_rna_TMM_zscore_zeroone', sep='\t
 kaufman_genes = ['DUSP4', 'PDE4D', 'IRS2', 'BAG1', 'HAL', 'TACC2', 'AVPI1', 'CPS1', 'PTP4A1', 'RFK',
                  'SIK1', 'FGA','GLCE', 'TESC', 'MUC5AC', 'TFF1']
 
+# get list of top 16 FDR genes (no logFC filter)
+FDR_genes = exact_test.sort_values(by='FDR')
+FDR_genes = FDR_genes.iloc[:16,1].tolist()
+
+# get list of top 16 FDR and logFC > 1 or < -1
+FDR_logFC_genes = exact_test.loc[(exact_test['logFC'] < -1) | (exact_test['logFC'] > 1)]
+FDR_logFC_genes = FDR_logFC_genes.sort_values(by='FDR')
+FDR_logFC_genes = FDR_logFC_genes.iloc[:16, 1].tolist()
+
+# get random gene list
+n = random.sample(range(0, len(exact_test.index)), 16) # generate 16 random indexes
+random_genes = exact_test.iloc[n, 1]
+
+# # get list of top 16 logFC (with FDR <= 0.01)
+# logFC_genes = exact_test[exact_test['FDR'] <= 0.01] # keep significant genes only
+# abs_logFC = abs(logFC_genes['logFC']).tolist() # compute absolute values of logFC (to select both up- and down-regulated genes)
+# logFC_genes = logFC_genes.assign(logFC = abs_logFC)
+# logFC_genes = logFC_genes.sort_values(by='logFC', ascending=False)
+# logFC_genes = logFC_genes.iloc[:16, 1].tolist()
+
 # Prepare data for scoring (select relevant genes and get mutation status)
-df_training = prepareTrainingData(df_rna_zscore_zeroone, df_mut, kaufman_genes)
+df_training = prepareTrainingData(df_rna_zscore_zeroone, df_mut, FDR_genes)
 
 # Score samples and plot data
 df_score = kaufmanScore(df_training)
 fig,ax = plotScores(df_score)
-fig.savefig('results/kaufman_score.png')
+fig.savefig('results/kaufman_score_random_genes.png')
 
 # ROC curves to evaluate scoring performance
 mutation = df_score['mutation'].tolist()
 score = df_score['score'].tolist()
 fpr, tpr, thresh = roc_curve(mutation, score, pos_label=1)
 fig, ax = plotROC(fpr, tpr)
-fig.savefig('results/kaufman_ROC.png')
+fig.savefig('results/kaufman_ROC_random_genes.png')
 auc_score = roc_auc_score(mutation, score)
 
 # randomized control - shuffle labels
