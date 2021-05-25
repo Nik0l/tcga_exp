@@ -19,7 +19,27 @@ def normalize_data(df, columns, index):
     df = pd.DataFrame(df, columns=columns, index=index)
     return df
 
-def prepareTrainingData(df_rna, df_mut, genes):
+def getGeneList(df_tested_genes, n, rank_by='FDR', logFC_filter=True):
+    '''
+    @param df_tested_genes: dataframe containing gene symbols and their respective FDR and logFC values
+    @param n: number of genes to be returned
+    @param rank_by: variable to be used for ranking
+    @param logFC_filter: if True, keeps only genes with (logFC ≤ -1 | logFC ≥ 1)
+    '''
+    if logFC_filter:
+        genes = df_tested_genes.loc[(df_tested_genes['logFC'] < -1) | (df_tested_genes['logFC'] > 1)]
+
+    if rank_by == 'logFC':
+        genes = df_tested_genes[df_tested_genes['FDR'] <= 0.01]  # keep significant genes only
+        abs_logFC = abs(genes['logFC']).tolist()  # compute absolute values of logFC (to select both up- and down-regulated genes)
+        genes = genes.assign(logFC=abs_logFC)
+        genes = genes.sort_values(by=rank_by, ascending=False)
+    else:
+        genes = genes.sort_values(by=rank_by)
+    gene_list = genes.iloc[:n, 1].tolist()
+    return(gene_list)
+
+def prepareScoringData(df_rna, df_mut, genes):
     # Filter df_rna using gene_list
     # Add mutation status as last column
     gene_list = genes
@@ -39,7 +59,7 @@ def plotScores(df_score, zeroone_norm = True):
     # plots Kaufman scores
     fig_dims = (8, 6)
     fig, ax = plt.subplots(figsize=fig_dims)
-    plot = sns.stripplot(x='mutation', y='score', data=df_score, palette=["darkblue", "red"])
+    plot = sns.violinplot(x='mutation', y='score', data=df_score, palette=["darkblue", "red"])
     plot.set_xlabel('STK11', fontsize=15)
     plot.set_ylabel('K score', fontsize=15)
     sns.despine()
@@ -80,71 +100,48 @@ df_rna_t = df_rna.transpose()
 columns = list(df_rna_t.columns)
 index = df_rna_t.index
 df_rna_zscore = apply_z_score(df_rna_t, columns=columns, index=index)
-df_rna_zscore.to_csv('data/sophie_ML/df_rna_TMM_zscore', sep='\t', compression='gzip')
+df_rna_zscore.to_csv('data/sophie_ML/df_rna_TMM_zscore.csv')
 
 # Scale data using zero-one normalization
 df_rna_zscore_zeroone = normalize_data(df_rna_zscore, columns=columns, index=index)
-df_rna_zscore_zeroone.to_csv('data/sophie_ML/df_rna_TMM_zscore_zeroone', sep='\t', compression='gzip')
+df_rna_zscore_zeroone.to_csv('data/sophie_ML/df_rna_TMM_zscore_zeroone.csv')
 
 # Kaufman scoring #####################################################################################################
 # get list of genes of interest #######################################################################################
+# 16-signature genes
 kaufman_genes = ['DUSP4', 'PDE4D', 'IRS2', 'BAG1', 'HAL', 'TACC2', 'AVPI1', 'CPS1', 'PTP4A1', 'RFK',
                  'SIK1', 'FGA','GLCE', 'TESC', 'MUC5AC', 'TFF1']
 
-# get list of top 16 FDR genes (no logFC filter)
-FDR_genes = exact_test.sort_values(by='FDR')
-FDR_genes = FDR_genes.iloc[:16,1].tolist()
-
-# get list of top 16 FDR and logFC > 1 or < -1
-FDR_logFC_genes = exact_test.loc[(exact_test['logFC'] < -1) | (exact_test['logFC'] > 1)]
-FDR_logFC_genes = FDR_logFC_genes.sort_values(by='FDR')
-FDR_logFC_genes = FDR_logFC_genes.iloc[:16, 1].tolist()
-
-# get list of top 100 FDR genes and logFC > 1 or < -1
-FDR_genes_100 = exact_test.loc[(exact_test['logFC'] < -1) | (exact_test['logFC'] > 1)]
-FDR_genes_100 = FDR_genes_100.sort_values(by='FDR')
-FDR_genes_100 = FDR_genes_100.iloc[:100,1].tolist()
-
-# get list of top 1000 FDR genes and logFC > 1 or < -1
-FDR_genes_1000 = exact_test.loc[(exact_test['logFC'] < -1) | (exact_test['logFC'] > 1)]
-FDR_genes_1000 = FDR_genes_1000.sort_values(by='FDR')
-FDR_genes_1000 = FDR_genes_1000.iloc[:1000,1].tolist()
-
-# get list of top 5 FDR genes (no logFC filter)
-FDR_genes_5 = exact_test.loc[(exact_test['logFC'] < -1) | (exact_test['logFC'] > 1)]
-FDR_genes_5 = FDR_genes_5.sort_values(by='FDR')
-FDR_genes_5 = FDR_genes_5.iloc[:5,1].tolist()
-
 # Nikolay's list - top10
 top10_nik = ['SLC22A6', 'C6orf176', 'COL25A1', 'SLC14A2', 'GLTPD2', 'AGXT2L1', 'CALCA', 'FXYD4', 'C1orf64', 'INHA']
+
+# Ranked gene lists
+FDR_genes_top16 = getGeneList(exact_test, 16, rank_by='FDR', logFC_filter=True)
+FDR_genes_top100 = getGeneList(exact_test, 100, rank_by='FDR', logFC_filter=True)
+FDR_genes_top1000 = getGeneList(exact_test, 1000, rank_by='FDR', logFC_filter=True)
+FDR_genes_top5 = getGeneList(exact_test, 5, rank_by='FDR', logFC_filter=True)
+logFC_genes_top16 = getGeneList(exact_test, 16, rank_by='logFC', logFC_filter=True)
+logFC_genes_top100 = getGeneList(exact_test, 100, rank_by='logFC', logFC_filter=True)
 
 # get random gene list
 n = random.sample(range(0, len(exact_test.index)), 16) # generate 16 random indexes
 random_genes = exact_test.iloc[n, 1]
 
-# # get list of top 16 logFC (with FDR <= 0.01)
-logFC_genes = exact_test[exact_test['FDR'] <= 0.01] # keep significant genes only
-abs_logFC = abs(logFC_genes['logFC']).tolist() # compute absolute values of logFC (to select both up- and down-regulated genes)
-logFC_genes = logFC_genes.assign(logFC = abs_logFC)
-logFC_genes = logFC_genes.sort_values(by='logFC', ascending=False)
-logFC_genes = logFC_genes.iloc[:16, 1].tolist()
-
-
 # Scoring ############################################################################################################
 # Prepare data for scoring (select relevant genes and get mutation status)
-df_training = prepareTrainingData(df_rna_zscore_zeroone, df_mut, FDR_genes)
+data = prepareScoringData(df_rna_zscore_zeroone, df_mut, top10_nik)
 
 # Score samples and plot data
-df_score = kaufmanScore(df_training)
+df_score = kaufmanScore(data)
 fig,ax = plotScores(df_score)
-fig.savefig('results/kaufman_score_top16_FDR_genes.png')
+fig.savefig('results/violin_kaufman_top10_nikolay_genes.png')
 
 # ROC curves to evaluate scoring performance
 mutation = df_score['mutation'].tolist()
 score = df_score['score'].tolist()
 fpr, tpr, thresh = roc_curve(mutation, score, pos_label=1)
 fig, ax = plotROC(fpr, tpr)
-fig.savefig('results/kaufman_ROC_top16_genes.png')
+fig.savefig('results/kaufman_ROC_top10_nikolay_genes.png')
 auc_score = roc_auc_score(mutation, score)
 
 # randomized control - shuffle labels
