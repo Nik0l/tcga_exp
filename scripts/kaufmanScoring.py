@@ -23,19 +23,20 @@ def getGeneList(df_tested_genes, n, rank_by='FDR', logFC_filter=True):
     '''
     @param df_tested_genes: dataframe containing gene symbols and their respective FDR and logFC values
     @param n: number of genes to be returned
-    @param rank_by: variable to be used for ranking
+    @param rank_by: variable to be used for ranking. Possible values: 'FDR', 'logFC_up', 'logFC_down'
     @param logFC_filter: if True, keeps only genes with (logFC ≤ -1 | logFC ≥ 1)
     '''
     if logFC_filter:
         genes = df_tested_genes.loc[(df_tested_genes['logFC'] < -1) | (df_tested_genes['logFC'] > 1)]
 
-    if rank_by == 'logFC':
+    if rank_by == 'logFC_up':
         genes = df_tested_genes[df_tested_genes['FDR'] <= 0.01]  # keep significant genes only
-        abs_logFC = abs(genes['logFC']).tolist()  # compute absolute values of logFC (to select both up- and down-regulated genes)
-        genes = genes.assign(logFC=abs_logFC)
-        genes = genes.sort_values(by=rank_by, ascending=False)
+        genes = genes.sort_values(by='logFC', ascending=False)
+    elif rank_by == 'logFC_down':
+        genes = df_tested_genes[df_tested_genes['FDR'] <= 0.01]  # keep significant genes only
+        genes = genes.sort_values(by='logFC', ascending=True)
     else:
-        genes = genes.sort_values(by=rank_by)
+        genes = genes.sort_values(by='FDR')
     gene_list = genes.iloc[:n, 1].tolist()
     return(gene_list)
 
@@ -120,8 +121,12 @@ FDR_genes_top16 = getGeneList(exact_test, 16, rank_by='FDR', logFC_filter=True)
 FDR_genes_top100 = getGeneList(exact_test, 100, rank_by='FDR', logFC_filter=True)
 FDR_genes_top1000 = getGeneList(exact_test, 1000, rank_by='FDR', logFC_filter=True)
 FDR_genes_top5 = getGeneList(exact_test, 5, rank_by='FDR', logFC_filter=True)
-logFC_genes_top16 = getGeneList(exact_test, 16, rank_by='logFC', logFC_filter=True)
-logFC_genes_top100 = getGeneList(exact_test, 100, rank_by='logFC', logFC_filter=True)
+
+logFC_up_genes_top16 = getGeneList(exact_test, 16, rank_by='logFC_up', logFC_filter=True)
+logFC_up_genes_top100 = getGeneList(exact_test, 100, rank_by='logFC_up', logFC_filter=True)
+
+logFC_down_genes_top16 = getGeneList(exact_test, 16, rank_by='logFC_down', logFC_filter=True)
+logFC_down_genes_top100 = getGeneList(exact_test, 100, rank_by='logFC_down', logFC_filter=True)
 
 # get random gene list
 n = random.sample(range(0, len(exact_test.index)), 16) # generate 16 random indexes
@@ -129,19 +134,19 @@ random_genes = exact_test.iloc[n, 1]
 
 # Scoring ############################################################################################################
 # Prepare data for scoring (select relevant genes and get mutation status)
-data = prepareScoringData(df_rna_zscore_zeroone, df_mut, top10_nik)
+data = prepareScoringData(df_rna_zscore_zeroone, df_mut, kaufman_genes)
 
 # Score samples and plot data
 df_score = kaufmanScore(data)
 fig,ax = plotScores(df_score)
-fig.savefig('results/violin_kaufman_top10_nikolay_genes.png')
+fig.savefig('results/violin_kaufman_logFC_down_top100_genes.png')
 
 # ROC curves to evaluate scoring performance
 mutation = df_score['mutation'].tolist()
 score = df_score['score'].tolist()
 fpr, tpr, thresh = roc_curve(mutation, score, pos_label=1)
 fig, ax = plotROC(fpr, tpr)
-fig.savefig('results/kaufman_ROC_top10_nikolay_genes.png')
+fig.savefig('results/kaufman_ROC_logFC_down_top100_genes.png')
 auc_score = roc_auc_score(mutation, score)
 
 # randomized control - shuffle labels
@@ -150,3 +155,23 @@ fpr_rand, tpr_rand, thresh_rand = roc_curve(mutation, score, pos_label=1)
 fig, ax = plotROC(fpr_rand, tpr_rand)
 fig.savefig('results/kaufman_ROC_randomized.png')
 auc_score_random = roc_auc_score(mutation, score)
+
+# Misc ###############################################################################################################
+# check intersections between gene lists
+np.intersect1d(FDR_genes_top16, logFC_up_genes_top16) # ['BLOC1S5-TXNDC5', 'INHA', 'NNAT', 'NPY'] - 4 genes overlap
+
+np.intersect1d(FDR_genes_top100, logFC_up_genes_top100)
+# 48 genes overlap
+# ['ASPG', 'BAALC', 'BLOC1S5-TXNDC5', 'BMP6', 'BPIFA2', 'BPIFB2',
+#  'CALCA', 'CALCB', 'CBR1', 'CCDC154', 'CHGB', 'CHRDL2', 'CRB1',
+#  'EYS', 'FAM163A', 'FAM9B', 'FGL1', 'GALNTL6', 'GLTPD2', 'GREB1',
+#  'HPX', 'INHA', 'KLRC2', 'LCN15', 'LILRA2', 'LRRC26', 'MAFA',
+#  'MARCHF4', 'MTMR7', 'NNAT', 'NPAS3', 'NPY', 'NTNG2', 'ODC1',
+#  'PAK3', 'PTPRN', 'RELN', 'RERGL', 'RET', 'SLC16A14', 'SLC26A4',
+#  'SLC7A2', 'SPP2', 'SRARP', 'TAF1L', 'TENM1', 'TXNDC2', 'ZACN']
+
+np.intersect1d(FDR_genes_top16, logFC_down_genes_top16) # no overlap
+
+np.intersect1d(FDR_genes_top100, logFC_down_genes_top100)
+# 7 genes overlap
+# ['ADGRF1', 'ALB', 'FAT2', 'GJA3', 'IVL', 'SHISA3', 'SLC6A20']
