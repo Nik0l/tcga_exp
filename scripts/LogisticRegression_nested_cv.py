@@ -157,7 +157,7 @@ gene_lists = {'k_genes':kaufman_genes,
               'random_genes_3':random_genes_3_list}
 
 # perform nested cross-validation to evaluate performance
-LR_results, average_scores = LogisticRegression_nested_cv(df_rna, df_mut, gene_lists)
+cv_results, scores, average_scores = LogisticRegression_nested_cv(df_rna, df_mut, gene_lists)
 
 # plot results
 fig, ax = plot_nested_cv_results(LR_results)
