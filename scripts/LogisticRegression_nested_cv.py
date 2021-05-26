@@ -2,7 +2,6 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold, GridSearchCV, cross_validate
 from sklearn.linear_model import LogisticRegression
 import seaborn as sns
@@ -93,6 +92,34 @@ def plot_nested_cv_results(scores):
     plt.title('Logistic Regression\nnested cross-validation (k=10)', fontsize=15, weight='bold')
     return(fig, ax)
 
+def getCoefficients(cv_results, name, gene_lists):
+    '''
+    Creates dataframe with coefficients from the best estimators for each outer fold
+    @param cv_results: output from sklearn.cross_validate(return_estimator=True)
+    @param name: name of the gene_list of interest (must be a gene_lists key)
+    @param gene_lists: dictionary containing the gene_list names and corresponding gene symbols
+    Returns a dataframe containing coeffcient values for each gene (columns) and runs (indexes)
+    '''
+    k = len(cv_results[name]['estimator']) # find number of K-folds
+    n = len(gene_lists[name]) # find number of genes
+    coef_df = pd.DataFrame(columns=range(n)) # create empty dataframe to store coeffcients
+    for i in range(k):
+        coef_df = coef_df.append(cv_results[name]['estimator'][i].best_estimator_.coef_.tolist())
+    coef_df.columns = gene_lists[name]
+
+    return(coef_df)
+
+def plotCoefficients(coef_df, y_lim=None):
+    fig, ax = plt.subplots()
+    sns.boxplot(data=coef_df, palette='Greys')
+    sns.despine()
+    plt.ylim(y_lim)
+    plt.xticks(rotation=90, fontsize=12)
+    plt.ylabel('LR coefficient', fontsize=12, weight='bold')
+    plt.title('Logistic Regression Coefficients', fontsize=15, weight='bold')
+    return(fig, ax)
+
+
 # Load data ##########################################################################################################
 path = 'data/sophie_ML/'
 df_rna = pd.read_csv(path + 'df_rna_TMM_zscore_zeroone.csv') # df_rna: pre-processed counts table
@@ -160,5 +187,11 @@ gene_lists = {'k_genes':kaufman_genes,
 cv_results, scores, average_scores = LogisticRegression_nested_cv(df_rna, df_mut, gene_lists)
 
 # plot results
-fig, ax = plot_nested_cv_results(LR_results)
+fig, ax = plot_nested_cv_results(scores)
 fig.savefig('results/logistic_regression/LR_nested_cv.png', bbox_inches='tight')
+
+# Check model coefficients
+coef_df = getCoefficients(cv_results, name='top_16_FDR', gene_lists=gene_lists)
+# Plot results
+fig, ax = plotCoefficients(coef_df)
+fig.savefig('results/logistic_regression/LR_coefficients_top_16_FDR.png', bbox_inches='tight')
