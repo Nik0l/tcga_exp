@@ -3,8 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import StratifiedKFold
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import StratifiedKFold, GridSearchCV, cross_validate
 from sklearn.linear_model import LogisticRegression
 import seaborn as sns
 import random
@@ -60,26 +59,34 @@ def LogisticRegression_nested_cv(df_rna, df_mut, gene_lists):
     # define search
     search = GridSearchCV(model, params, scoring='roc_auc', return_train_score=True, cv=cv_inner, refit=True)
 
-    # create dataframe to store results
-    results = pd.DataFrame(columns=gene_lists.keys())
+    # create empty dictionary and dataframe to store results
+    cv_results = dict.fromkeys(gene_lists.keys(), None)
+    df_scores = pd.DataFrame(columns=gene_lists.keys())
 
     for i, k in enumerate(gene_lists.keys()):
         # prepare X and y using the list of genes of interest
         X, y = prepareData(df_rna, df_mut, gene_lists[k])
-        # execute the nested cross-validation
-        scores = cross_val_score(search, X, y, scoring='roc_auc', cv=cv_outer, n_jobs=-1)
-        results[k] = scores
-        print('gene list ' + str(i+1) + ' of ' + str(len(gene_lists.keys())))
+        # execute the nested cross-validation and get results
+        cv_out = cross_validate(search, X, y,
+                                scoring='roc_auc',
+                                cv=cv_outer,
+                                n_jobs=-1,
+                                return_train_score=True,
+                                return_estimator=True)
+        cv_results[k] = cv_out
+        df_scores[k] = cv_out['test_score']
+        print('gene list ' + str(i + 1) + ' of ' + str(len(gene_lists.keys())))
 
-    average_scores = pd.DataFrame(index = gene_lists.keys(), columns = ['average_roc_auc', 'std'])
-    average_scores['average_roc_auc'] = results.apply(np.mean, axis='index')
-    average_scores['std'] = results.apply(np.std, axis='index')
+    # compute average scores and std
+    average_scores = pd.DataFrame(index=gene_lists.keys(), columns=['average_roc_auc', 'std'])
+    average_scores['average_roc_auc'] = df_scores.apply(np.mean, axis='index')
+    average_scores['std'] = df_scores.apply(np.std, axis='index')
 
-    return(results, average_scores)
+    return (cv_results, df_scores, average_scores)
 
-def plot_nested_cv_results(results):
+def plot_nested_cv_results(scores):
     fig, ax = plt.subplots()
-    sns.boxplot(data=results, palette='Greys')
+    sns.boxplot(data=scores, palette='Greys')
     sns.despine()
     plt.xticks(rotation=90, fontsize=12)
     plt.ylabel('AUROC score', fontsize=12, weight='bold')
