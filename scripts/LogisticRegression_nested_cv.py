@@ -118,7 +118,7 @@ FDR_genes_bottom100 = FDR_genes_bottom100.iloc[:100, 1].tolist()
 
 # Random gene sets
 n = random.sample(range(0, len(exact_test.index)), 16) # generate 16 random indexes
-random_genes_1 = exact_test.iloc[n, :]
+random_genes_1 = exact_test.iloc[n, :] # to check gene statistics (FDR, logFC...)
 random_genes_1_list = exact_test.iloc[n, 1]
 
 n = random.sample(range(0, len(exact_test.index)), 16)
