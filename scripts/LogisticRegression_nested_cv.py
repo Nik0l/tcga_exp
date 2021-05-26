@@ -117,15 +117,15 @@ FDR_genes_bottom100 = exact_test.sort_values(by='FDR', ascending=False)
 FDR_genes_bottom100 = FDR_genes_bottom100.iloc[:100, 1].tolist()
 
 # Random gene sets
-n = random.sample(range(0, len(exact_test.index)), 16) # generate 100 random indexes
+n = random.sample(range(0, len(exact_test.index)), 16) # generate 16 random indexes
 random_genes_1 = exact_test.iloc[n, :]
 random_genes_1_list = exact_test.iloc[n, 1]
 
-n = random.sample(range(0, len(exact_test.index)), 16) # generate 100 random indexes
+n = random.sample(range(0, len(exact_test.index)), 16)
 random_genes_2 = exact_test.iloc[n, :]
 random_genes_2_list = exact_test.iloc[n, 1]
 
-n = random.sample(range(0, len(exact_test.index)), 16) # generate 100 random indexes
+n = random.sample(range(0, len(exact_test.index)), 16)
 random_genes_3 = exact_test.iloc[n, :]
 random_genes_3_list = exact_test.iloc[n, 1]
 
