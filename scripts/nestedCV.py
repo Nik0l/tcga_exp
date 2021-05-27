@@ -199,6 +199,10 @@ random_df_1, random_list_1 = getRandomGeneList(exact_test, 16)
 random_df_2, random_list_2 = getRandomGeneList(exact_test, 16)
 random_df_3, random_list_3 = getRandomGeneList(exact_test, 16)
 
+top_5_important = ['NPY', 'EYS', 'MTMR7', 'ODC1', 'SLC16A14']
+top_17_important = ['NPY', 'EYS', 'MTMR7', 'ODC1', 'SLC16A14', 'NNAT', 'ZACN', 'CACNB2', 'INHA', 'GREB1', 'HPX',
+                    'FURIN', 'TENM1', 'ASPG', 'RPH3AL', 'RET', 'CRB1']
+
 # prepare gene_lists object
 gene_lists = {'k_genes':kaufman_genes,
               'top_5_FDR':FDR_genes_top5,
@@ -217,6 +221,12 @@ gene_lists = {'k_genes':kaufman_genes,
               'random_genes_2':random_list_2,
               'random_genes_3':random_list_3}
 
+important_gene_list = {'top_5_FDR':FDR_genes_top5,
+                       'top_5_important': top_5_important,
+                       'top_17_important': top_17_important,
+                       'top_16_FDR':FDR_genes_top16,
+                       'top_50_FDR':FDR_genes_top50}
+
 # Logistic regression ##############################################################################################
 # define the model
 LR_model = LogisticRegression(solver='liblinear',
@@ -228,13 +238,13 @@ LR_params = {'C': [0.01, 0.1, 1, 10, 100],
              'penalty': ['l1', 'l2']}
 
 # run nested CV
-LR_cv_results, LR_cv_scores, LR_cv_average_scores = nestedCV(LR_model, LR_params, df_rna, df_mut, gene_lists)
+LR_cv_results, LR_cv_scores, LR_cv_average_scores = nestedCV(LR_model, LR_params, df_rna, df_mut, important_gene_list)
 
 # plot cv scores
 fig, ax = plot_nested_cv_results(LR_cv_scores,
                                  y_lim=[0.2, 1.1],
                                  title='Logistic Regression\nnested cross-validation (k=10)')
-fig.savefig('results/logistic_regression/LR_nested_cv.png', bbox_inches='tight')
+fig.savefig('results/logistic_regression/LR_nested_cv_important_genes.png', bbox_inches='tight')
 
 # get best estimators parameters for each outer run
 param_df = getEstimatorParams(LR_cv_results,
@@ -242,29 +252,30 @@ param_df = getEstimatorParams(LR_cv_results,
                               params=['C', 'penalty'])
 
 # Get coefficients of best estimators for all outer runs
-coef_df = getFeatureImportance(LR_cv_results, name='top_50_FDR', gene_lists=gene_lists, model_type='LR')
+coef_df = getFeatureImportance(LR_cv_results, name='top_16_FDR', gene_lists=gene_lists, model_type='LR')
 
 # Plot results
-fig, ax = plotFeatureImportance(coef_df, y_lim=None, title='LR coefficients')
-fig.savefig('results/logistic_regression/LR_coefficients_top_50_FDR.png', bbox_inches='tight')
+fig, ax = plotFeatureImportance(coef_df, y_lim=[-5,20], title='LR coefficients\ntop 16 FDR genes')
+fig.savefig('results/logistic_regression/LR_coefficients_top_16_FDR.png', bbox_inches='tight')
 
 
 # Random Forest ##############################################################################################
 # define the model
-RF_model = RandomForestClassifier(class_weight='balanced')
+RF_model = RandomForestClassifier(class_weight='balanced',
+                                  random_state=0)
 
 # define hyperparameter search space
 RF_params = {'n_estimators': [50, 100],
              'max_depth': [2, 3, 4]}
 
 # run nested CV
-RF_cv_results, RF_cv_scores, RF_cv_average_scores = nestedCV(RF_model, RF_params, df_rna, df_mut, gene_lists)
+RF_cv_results, RF_cv_scores, RF_cv_average_scores = nestedCV(RF_model, RF_params, df_rna, df_mut, important_gene_list)
 
 # plot cv scores
 fig, ax = plot_nested_cv_results(RF_cv_scores,
                                  y_lim=[0.2, 1.1],
                                  title='Random Forest\nnested cross-validation (k=10)')
-fig.savefig('results/random_forest/RF_nested_cv_max_depth.png', bbox_inches='tight')
+fig.savefig('results/random_forest/RF_nested_cv_important_genes.png', bbox_inches='tight')
 
 # get best estimators hyperparameters for each outer run
 RF_param_df = getEstimatorParams(RF_cv_results,
@@ -275,5 +286,5 @@ RF_param_df = getEstimatorParams(RF_cv_results,
 feat_df = getFeatureImportance(RF_cv_results, name='top_50_FDR', gene_lists=gene_lists, model_type='RF')
 
 # Plot results
-fig, ax = plotFeatureImportance(feat_df, y_lim=None, title='RF feature importance')
+fig, ax = plotFeatureImportance(feat_df, y_lim=None, title='RF feature importance\ntop 50 FDR genes')
 fig.savefig('results/random_forest/RF_feature_importance_top_50_FDR.png', bbox_inches='tight')
