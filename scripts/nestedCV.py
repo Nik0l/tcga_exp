@@ -199,6 +199,7 @@ random_df_1, random_list_1 = getRandomGeneList(exact_test, 16)
 random_df_2, random_list_2 = getRandomGeneList(exact_test, 16)
 random_df_3, random_list_3 = getRandomGeneList(exact_test, 16)
 
+# Genes selected based on RF feature importance
 top_5_important = ['NPY', 'EYS', 'MTMR7', 'ODC1', 'SLC16A14']
 top_17_important = ['NPY', 'EYS', 'MTMR7', 'ODC1', 'SLC16A14', 'NNAT', 'ZACN', 'CACNB2', 'INHA', 'GREB1', 'HPX',
                     'FURIN', 'TENM1', 'ASPG', 'RPH3AL', 'RET', 'CRB1']
