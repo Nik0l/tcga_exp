@@ -40,14 +40,14 @@ def dimReduction(samples, mutation_status, reduction):
         reducer = PCA(n_components=2)
     elif reduction == 'UMAP':
         reducer = UMAP(n_components=2)
-    map = reducer.fit_transform(samples)
+    map = reducer.fit_transform(samples.iloc[:,:512])
     df = pd.DataFrame(map, columns=['x', 'y'])
     df['mutation'] = mutation_status
     return(df)
 
 def plotMAP(df, title=None):
     fig, ax = plt.subplots()
-    sns.scatterplot(data=df, x='x', y='y', hue='mutation', palette=['blue', 'red'], s=30)
+    sns.scatterplot(data=df, x='x', y='y', hue='mutation', palette=['darkblue', 'red'], s=30)
     plt.legend(loc='upper left', title='STK11 mutation')
     plt.title(title)
     return(fig, ax)
@@ -70,6 +70,8 @@ mutation_status = wsi_filtered['mutation_status'].tolist() # mutation status of 
 
 # Process embeddings ###############################################################################################
 mean_embeddings, median_embeddings = processEmbeddings(path_to_embeddings, file_names)
+mean_embeddings.to_csv('data/sophie_ML/mean_image_embeddings.csv', index=False)
+median_embeddings.to_csv('data/sophie_ML/median_embeddings.csv', index=False)
 
 # Check if mutation_status is correct
 # mean_embeddings['mutation'] = mutation_status
