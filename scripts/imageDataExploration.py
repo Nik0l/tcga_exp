@@ -67,6 +67,7 @@ wsi_filtered = pd.merge(wsi_filtered, patients[['cases.submitter_id', 'mutation_
 
 file_names = wsi_filtered['file_name'].tolist() # list of wsi file names to be processed
 mutation_status = wsi_filtered['mutation_status'].tolist() # mutation status of wsi samples, order preserved
+pd.DataFrame(mutation_status, columns=['mutation']).to_csv('data/sophie_ML/mutation_status_embeddings.csv', index=False)
 
 # Process embeddings ###############################################################################################
 mean_embeddings, median_embeddings = processEmbeddings(path_to_embeddings, file_names)
@@ -79,6 +80,8 @@ median_embeddings.to_csv('data/sophie_ML/median_embeddings.csv', index=False)
 # mut_patients_emb = mean_embeddings[mean_embeddings['mutation'] == 1]['cases.submitter_id'].unique().tolist()
 # mut_patients = patients[patients['mutation_status'] == 1]['cases.submitter_id'].unique().tolist()
 # sorted(mut_patients_emb) == sorted(mut_patients)
+
+
 
 # Dimensionality reduction #########################################################################################
 # PCA
