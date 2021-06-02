@@ -11,20 +11,22 @@ def get_luad_data_info(path):
                          the second is with the slide and the patch position information ('paths.pkl')"""
 
     data = np.load(path + 'embeddings.npy')
-    print(data.shape)
+    print('Embeddings shape:', data.shape)
 
     data_info = pd.read_pickle(path + 'paths.pkl')
-    print(data_info[0])
 
     image_names = [f.split('/')[2] for f in data_info if f.split('/')[1] == 'TCGA-LUAD']
+    #print(image_names)
+    image_names_unique = list(set(image_names))
+    print(image_names_unique)
 
     n_patches_total = len(image_names)
 
     unique_names = set(image_names)
     n_images_total = len(unique_names)
 
-    print(n_patches_total)
-    print(n_images_total)
+    print('Total patches:', n_patches_total)
+    print('Total unique images:', n_images_total)
 
 
 def get_patches_for_image(path, slide_name):
@@ -33,13 +35,11 @@ def get_patches_for_image(path, slide_name):
     data_info = pd.read_pickle(path + 'paths.pkl')
     print(type(data_info))
     filter_indices = [i for i, s in enumerate(data_info) if slide_name in s]
-    #print(filter_indices)
     n_patches_total = len(filter_indices)
-    print('total patches in slide', n_patches_total)
+    print('Total %d patches in %s image' % (n_patches_total, slide_name))
     data = np.load(path + 'embeddings.npy')
     print(data.shape)
     patches = np.take(data, filter_indices, axis=0)
-    print(patches.shape)
     return patches
 
 
@@ -69,31 +69,35 @@ def process_second_embedding_data(path='/Users/kmwx127/PycharmProjects/project/t
 
 
 def get_embeddings_image(path, image_name):
-
+    """ Load all the embedded patches from the slide. """
     image_embeddings = np.loadtxt(path + image_name + '.csv', delimiter=',', skiprows=1)
-    print(image_embeddings.shape)
+    n_patches = image_embeddings.shape[0]
+    print('Total %d patches in %s slide' % (n_patches, image_name))
     return image_embeddings
 
 
-def get_all_images(path_dsmil_embeddings):
-
-    all_files = glob.glob(path_dsmil_embeddings + '*.csv')
-    all_images_names = [f.split('/')[-1].split('.')[0] for f in all_files]
-    return all_images_names
-
-
 def process_first_embedding_data(path):
-    all_images_names = get_all_images(path_dsmil_embeddings=path)
-    print(all_images_names)
-    image_embeddings = get_embeddings_image(path, all_images_names[0])
+    luad_images_only = get_first_luad_data_info(path)
+    image_embeddings = get_embeddings_image(path, luad_images_only[1])
     print(image_embeddings)
     plot_umap_samples(image_embeddings)
 
 
-path_one = '/Users/kmwxxxx/Downloads/public_method/tcga-dataset/tcga_lung_data_feats/'
-process_first_embedding_data(path=path_one)
+def get_first_luad_data_info(path):
+    """ Get only LUAD images names. """
+    luad_images_only = pd.read_csv(path.rsplit('/', 2)[0] + '/LUAD.csv')['0']
+    luad_images_only = list(set([f.split('/')[1] for f in list(luad_images_only)]))
+    print('total LUAD images in the list:', len(luad_images_only))
+    return luad_images_only
 
-path_two = '/Users/kmwxxxx/PycharmProjects/project/tcga_exp/data/image_embeddings/'
-process_second_embedding_data(path=path_two)
 
+path_one = '/Users/kmwx127/Downloads/public_method/tcga-dataset/tcga_lung_data_feats/'
+#process_first_embedding_data(path=path_one)
 
+path_two = '/Users/kmwx127/PycharmProjects/project/tcga_exp/data/image_embeddings/'
+#process_second_embedding_data(path=path_two)
+get_luad_data_info(path=path_two)
+path_tree = '~/PycharmProjects/project/tcga_exp/data/'
+
+df_mapping = pd.read_csv(path_tree + 'tcga_mapping.txt', delimiter='\t')
+#print(df_mapping)
