@@ -31,7 +31,7 @@ def pickleOpen(file_name):
     return(loaded_list)
 
 
-def sophie_example():
+def an_example():
     bags_subset = pickleOpen('data/sophie_ML/bags_subset.pkl')
     labels_subset = pickleOpen('data/sophie_ML/labels_subset.pkl')
     X_train, X_test, y_train, y_test = train_test_split(bags_subset, labels_subset, stratify=labels_subset)
@@ -42,6 +42,7 @@ def sophie_example():
     trainer.prepare(model, preprocess_pipeline=pipeline, metrics=metrics)
     valid = KFold(n_splits=2, shuffle=True)
     history = trainer.fit(X_train, y_train, sample_weights='balanced', validation_strategy=valid, verbose=1)
+    #history = trainer.fit(X_train, y_train, sample_weights='balanced', validation_strategy=None, verbose=1)
 
 
 def mil_test(path_to_data, use_smaller_bags=True, n_patches_max=100):
@@ -80,4 +81,7 @@ def mil_test(path_to_data, use_smaller_bags=True, n_patches_max=100):
     history = trainer.fit(X_train, y_train, sample_weights='balanced', validation_strategy=valid, verbose=1)
 
 
+# an axample what must work
+#mil_example()
+# wrapped the function for training on the embeddings
 mil_test(path_to_data='/Users/kmwx127/Downloads/data_for_ML/', use_smaller_bags=True, n_patches_max=100)
