@@ -135,4 +135,4 @@ def mil_dl_test(path_to_data, n_epochs=10, batch_size=5, use_smaller_bags=True, 
 #mil_example()
 # wrapped the function for training on the embeddings
 #mil_test(path_to_data='/Users/kmwx127/Downloads/data_for_ML/', use_smaller_bags=True, n_patches_max=100)
-mil_dl_test(path_to_data='/Users/kmwx127/Downloads/data_for_ML/', n_epochs=10, batch_size=5, use_smaller_bags=True, n_patches_max=100)
+mil_dl_test(path_to_data='/Users/kmwx127/Downloads/data_for_ML/', n_epochs=10, batch_size=100, use_smaller_bags=False, n_patches_max=100)
